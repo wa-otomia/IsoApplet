@@ -1494,7 +1494,7 @@ public class IsoApplet extends Applet implements ExtendedLength {
         short keyLength = (short)0;
         if(currentAlgorithmRef[0] == ALG_GEN_RSA_2048) {
             keyLength = KeyBuilder.LENGTH_RSA_2048;
-        } else if (currentAlgorithmRef[0] != ALG_GEN_RSA_4096) {
+        } else if (currentAlgorithmRef[0] == ALG_GEN_RSA_4096) {
             keyLength = KeyBuilder.LENGTH_RSA_4096;
         } else {
             ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
