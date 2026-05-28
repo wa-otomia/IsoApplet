@@ -77,10 +77,13 @@ public class IsoFileSystem extends DedicatedFile {
      * \see IsoFileSystem(short fileID, byte[] fileControlInformation)
      */
     public IsoFileSystem() {
-        this((short) 0x3F00, new byte[]	{(byte)0x6F, (byte)0x07, // FCI, Length 7.
+        this((short) 0x3F00, new byte[]	{(byte)0x6F, (byte)0x11, // FCI, Length 17.
                                          (byte)0x82, (byte)0x01, (byte)0x38, // File descriptor byte.
-                                         (byte)0x83, (byte)0x02, (byte)0x3F, (byte)0x00
-                                        }); // File ID.
+                                         (byte)0x83, (byte)0x02, (byte)0x3F, (byte)0x00, // File ID.
+                                         (byte)0x86, (byte)0x08, (byte)0x00, (byte)0x00,
+                                         (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x90,
+                                         (byte)0x90, (byte)0x00
+                                        }); // ACL: PIN required for root DF/EF creation.
     }
 
     /**
