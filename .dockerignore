@@ -1,0 +1,13 @@
+# Keep the Docker build context small and reproducible.
+.git
+.gitignore
+.gitmodules
+.github
+Doxyfile
+doc/
+out/
+*.cap
+*.swp
+*.orig
+*.un~
+ant-javacard.jar
