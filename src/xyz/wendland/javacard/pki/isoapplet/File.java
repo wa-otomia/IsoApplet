@@ -53,11 +53,15 @@ public abstract class File {
         this.fileID = fileID;
         this.parentDF = null;
         this.fci = fileControlInformation;
-        // Save the position of the ACL (Value field) in the FCI for performance reasons.
+        // Save the position of the ACL value field in the FCI for performance reasons.
         // If the position is -1, then every action may be performed.
         short pos;
         try {
-            pos = UtilTLV.findTag(fci, (short) 2, fci[(short)1], (byte) 0x86);
+            short innerLength = UtilTLV.decodeLengthField(fci, (short) 1);
+            short innerOffset = (short) (1 + UtilTLV.getLengthFieldLength(innerLength));
+            short aclTagPos = UtilTLV.findTag(fci, innerOffset, innerLength, (byte) 0x86);
+            short aclLength = UtilTLV.decodeLengthField(fci, (short)(aclTagPos+1));
+            pos = (short)(aclTagPos + 1 + UtilTLV.getLengthFieldLength(aclLength));
         } catch (NotFoundException e) {
             pos = -1;
         } catch (InvalidArgumentsException e) {
@@ -80,19 +84,19 @@ public abstract class File {
 
         switch(flag_operation) {
         case ACL_OP_DELETE_SELF:
-            return fci[(short)(aclPos+3)];
+            return fci[(short)(aclPos+1)];
 
         case ACL_OP_WRITE:
         case ACL_OP_CREATE_DF:
-            return fci[(short)(aclPos+7)];
+            return fci[(short)(aclPos+5)];
 
         case ACL_OP_UPDATE_ERASE:
         case ACL_OP_CREATE_EF:
-            return fci[(short)(aclPos+8)];
+            return fci[(short)(aclPos+6)];
 
         case ACL_OP_READ_SEARCH:
         case ACL_OP_DELETE_CHILD:
-            return fci[(short)(aclPos+9)];
+            return fci[(short)(aclPos+7)];
 
         default:
             return (byte) 0xFF; // No access for unknown actions.
