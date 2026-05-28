@@ -1,8 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="IsoApplet" default="dist" basedir=".">
 
-    <get src="https://github.com/martinpaljak/ant-javacard/releases/latest/download/ant-javacard.jar" dest="." skipexisting="true"/>
-    <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="ant-javacard.jar"/>
+    <property name="ant.javacard.version" value="v25.11.11"/>
+    <property name="ant.javacard.sha256" value="aa80f66b4d48d06c684c6639e7450cb33bd19de4ee9e48e182b1ca85070a4da1"/>
+    <property name="ant.javacard.jar" value="build/deps/ant-javacard-${ant.javacard.version}.jar"/>
+
+    <mkdir dir="build/deps"/>
+    <get src="https://github.com/martinpaljak/ant-javacard/releases/download/${ant.javacard.version}/ant-javacard.jar"
+         dest="${ant.javacard.jar}"
+         skipexisting="true"/>
+    <checksum file="${ant.javacard.jar}" algorithm="SHA-256"
+              property="${ant.javacard.sha256}" verifyproperty="ant.javacard.checksum.ok"/>
+    <fail message="Checksum verification failed for ${ant.javacard.jar}; delete the file and retry, or update ant.javacard.version and ant.javacard.sha256 together.">
+        <condition>
+            <not>
+                <istrue value="${ant.javacard.checksum.ok}"/>
+            </not>
+        </condition>
+    </fail>
+    <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="${ant.javacard.jar}"/>
 
     <description>Builds the project. </description>
     <target name="dist" description="generate the distribution">

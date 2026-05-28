@@ -28,13 +28,13 @@ The ECDSA implementation with Java Card version 2.2.2 is hardly usable in practi
 If your smartcard implements javacardx.apdu.ExtendedLength and IsoApplet is configured with `DEF_EXT_APDU` in `IsoApplet.java`, you can use extended APDUs.
 
 # Build process
-This project uses [ant-javacard](https://github.com/martinpaljak/ant-javacard) to build cap-files.
+This project uses [ant-javacard](https://github.com/martinpaljak/ant-javacard) to build cap-files. The Ant build downloads a pinned ant-javacard release and verifies its SHA-256 checksum before loading the task.
 After cloning the IsoApplet repository, all you have to do is:
 * Perform `git submodule init && git submodule update` to retrieve the Java Card SDKs, in case you did not `git clone --recursive` to clone this repository.
 * Install Apache `ant`, `openjdk-17-jdk-headless`
 * If needed, configure the correct Java SDK version or set the JAVA_HOME environment variable.
 * Invoke `ant` to produce the cap file.
-If you have build errors on an existing repository, try deleting the ant-javacard.jar file so that the newest version is downloaded.
+If you have checksum-related build errors on an existing repository, delete `build/deps/ant-javacard-*.jar` so that Ant can re-download and re-verify the pinned release.
 
 # Installation
 Install the CAP-file (IsoApplet.cap) to your Java Card smart card (e.g. with [GlobalPlatformPro](https://github.com/martinpaljak/GlobalPlatformPro)).
