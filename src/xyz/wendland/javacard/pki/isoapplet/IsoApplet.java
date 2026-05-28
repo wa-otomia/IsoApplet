@@ -141,6 +141,12 @@ public class IsoApplet extends Applet implements ExtendedLength {
     private Cipher rsaPkcs1Cipher = null;
     private boolean usePrecomputedHashEcdsa = false;
     private Signature ecdsaSignature = null;
+    private Signature ecdsaMd5Signature = null;
+    private Signature ecdsaSha1Signature = null;
+    private Signature ecdsaSha224Signature = null;
+    private Signature ecdsaSha256Signature = null;
+    private Signature ecdsaSha384Signature = null;
+    private Signature ecdsaSha512Signature = null;
     private Signature rsaSha1PssSignature = null;
     private Signature rsaSha224PssSignature = null;
     private Signature rsaSha256PssSignature = null;
@@ -196,10 +202,18 @@ public class IsoApplet extends Applet implements ExtendedLength {
             }
         }
 
-        // If the regular SIG_CIPHER_ECDSA ALG_NULL is not available we attempt the one with fixed hash length
+        // If the regular SIG_CIPHER_ECDSA ALG_NULL is not available we attempt the one with fixed hash length.
+        // These Signature instances must be cached: Java Card Signature.getInstance() normally allocates
+        // persistent objects, and object deletion support is optional on card platforms.
         if ((api_features & API_FEATURE_ECC) == 0) {
-            // We test SHA-256 because it's available in the JCardEngine simulator but more might be available
-            if (testEcdsaDigestAlgo(MessageDigest.ALG_SHA_256)) {
+            // We test SHA-256 because it's available in the JCardEngine simulator but more might be available.
+            ecdsaSha256Signature = createEcdsaDigestSignature(MessageDigest.ALG_SHA_256);
+            if (ecdsaSha256Signature != null) {
+                ecdsaMd5Signature = createEcdsaDigestSignature(MessageDigest.ALG_MD5);
+                ecdsaSha1Signature = createEcdsaDigestSignature(MessageDigest.ALG_SHA);
+                ecdsaSha224Signature = createEcdsaDigestSignature(MessageDigest.ALG_SHA_224);
+                ecdsaSha384Signature = createEcdsaDigestSignature(MessageDigest.ALG_SHA_384);
+                ecdsaSha512Signature = createEcdsaDigestSignature(MessageDigest.ALG_SHA_512);
                 api_features |= API_FEATURE_ECC;
                 usePrecomputedHashEcdsa = true;
             }
@@ -855,40 +869,35 @@ public class IsoApplet extends Applet implements ExtendedLength {
         }
     }
 
-    private static boolean testEcdsaDigestAlgo(byte algo) {
-        Signature sig = null;
+    private static Signature createEcdsaDigestSignature(byte algo) {
         try {
-            sig = Signature.getInstance(algo, Signature.SIG_CIPHER_ECDSA, Cipher.PAD_NULL, false);
-            return true;
+            return Signature.getInstance(algo, Signature.SIG_CIPHER_ECDSA, Cipher.PAD_NULL, false);
         } catch (CryptoException e) {
             if (e.getReason() == CryptoException.NO_SUCH_ALGORITHM) {
-                return false;
+                return null;
             } else {
                 throw e;
             }
-        } finally {
-            sig = null;
-            requestObjectDeletion();
         }
     }
 
-    private static byte getMessageDigestAlgoByLength(short length) throws ISOException {
+    private Signature getEcdsaDigestSignatureByLength(short length) throws ISOException {
         switch (length) {
         case MessageDigest.LENGTH_MD5:
-            return MessageDigest.ALG_MD5;
+            return ecdsaMd5Signature;
         case MessageDigest.LENGTH_SHA:
-            return MessageDigest.ALG_SHA; // or ALG_RIPEMD160
+            return ecdsaSha1Signature;
         case MessageDigest.LENGTH_SHA_224:
-            return MessageDigest.ALG_SHA_224; // or ALG_SHA3_224
+            return ecdsaSha224Signature;
         case MessageDigest.LENGTH_SHA_256:
-            return MessageDigest.ALG_SHA_256; // or ALG_SHA3_256
+            return ecdsaSha256Signature;
         case MessageDigest.LENGTH_SHA_384:
-            return MessageDigest.ALG_SHA_384; // or ALG_SHA3_384
+            return ecdsaSha384Signature;
         case MessageDigest.LENGTH_SHA_512:
-            return MessageDigest.ALG_SHA_512; // or ALG_SHA3_512
+            return ecdsaSha512Signature;
         default:
             ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-            return -1; // compiler is not happy otherwise
+            return null; // compiler is not happy otherwise
         }
     }
 
@@ -1389,32 +1398,22 @@ public class IsoApplet extends Applet implements ExtendedLength {
             ECPrivateKey ecKey = (ECPrivateKey) keys[currentPrivateKeyRef[0]];
 
             Signature sig = null;
-            try {
-                if (usePrecomputedHashEcdsa) {
-                    try {
-                        sig = Signature.getInstance(getMessageDigestAlgoByLength(lc), Signature.SIG_CIPHER_ECDSA, Cipher.PAD_NULL, false);
-                    } catch (CryptoException e) {
-                        if (e.getReason() == CryptoException.NO_SUCH_ALGORITHM) {
-                            ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
-                        } else {
-                            throw e;
-                        }
-                    }
-                } else {
-                    sig = ecdsaSignature;
+            if (usePrecomputedHashEcdsa) {
+                sig = getEcdsaDigestSignatureByLength(lc);
+                if (sig == null) {
+                    ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
                 }
-
-                sig.init(ecKey, Signature.MODE_SIGN);
-                if (usePrecomputedHashEcdsa) {
-                    sigLen = sig.signPreComputedHash(ram_buf, (short)0, lc, apdu.getBuffer(), (short)0);
-                } else {
-                    sigLen = sig.sign(ram_buf, (short)0, lc, apdu.getBuffer(), (short)0);
-                }
-                apdu.setOutgoingAndSend((short) 0, sigLen);
-            } finally {
-                sig = null;
-                requestObjectDeletion();
+            } else {
+                sig = ecdsaSignature;
             }
+
+            sig.init(ecKey, Signature.MODE_SIGN);
+            if (usePrecomputedHashEcdsa) {
+                sigLen = sig.signPreComputedHash(ram_buf, (short)0, lc, apdu.getBuffer(), (short)0);
+            } else {
+                sigLen = sig.sign(ram_buf, (short)0, lc, apdu.getBuffer(), (short)0);
+            }
+            apdu.setOutgoingAndSend((short) 0, sigLen);
             break;
 
         default:
