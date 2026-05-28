@@ -1,7 +1,7 @@
 # Reproducible build environment for IsoApplet.
 #
-# IsoApplet's build.xml downloads ant-javacard.jar at build time, and reads
-# the JavaCard SDK from ext/sdks (a git submodule of
+# IsoApplet's build.xml downloads a pinned ant-javacard.jar at build time,
+# verifies its SHA-256 checksum, and reads the JavaCard SDK from ext/sdks (a git submodule of
 # martinpaljak/oracle_javacard_sdks). JDK 8 is required because the JC
 # converter (com.sun.javacard.converter.Main) reflectively uses classes that
 # only run on JDK 8.
